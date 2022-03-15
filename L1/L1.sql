@@ -25,9 +25,7 @@ GROUP BY SalesLT.Address.City;
 do kategorii będących w liściach tego drzewa. Utworzyć zapytanie, które zwróci dwie kolumny: nazwę kategorii
 i nazwę produktu dla produktów będących przypisanych do kategorii nie będących w liściach.*/
 
-SELECT * FROM SalesLT.Product;
 UPDATE SalesLT.Product SET ProductCategoryID=1 WHERE SalesLT.Product.ProductID = 680;
-SELECT * FROM SalesLT.Product;
 
 SELECT Product.Name, NotLeafs.ProductCategoryName
 FROM SalesLT.Product
