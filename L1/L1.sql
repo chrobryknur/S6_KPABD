@@ -37,10 +37,10 @@ JOIN
 ON SalesLT.Product.ProductCategoryID = NotLeafs.ProductCategoryID;
 
 --Zad5
-DROP VIEW IF EXISTS DISCOUNTS
+DROP VIEW IF EXISTS Discounts;
 
 GO
-CREATE VIEW DISCOUNTS
+CREATE VIEW Discounts
 AS
 SELECT SalesLT.Customer.FirstName, SalesLT.Customer.LastName, (SalesLT.SalesOrderDetail.UnitPriceDiscount * SalesLT.SalesOrderDetail.UnitPrice) AS Mult
 FROM SalesLT.Customer
@@ -50,7 +50,7 @@ GROUP BY SalesLT.Customer.CustomerID, SalesLT.Customer.FirstName, SalesLT.Custom
 GO
 
 SELECT FirstName, LastName, SUM(Mult) AS DiscountsSum
-FROM DISCOUNTS
+FROM Discounts
 GROUP BY FirstName, LastName
 ORDER BY FirstName, LastName;
 
