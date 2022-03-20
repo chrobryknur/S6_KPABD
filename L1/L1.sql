@@ -1,4 +1,7 @@
 --Zad1
+/*Utworzyć zapytanie, które na podstawie SalesOrderHeader.ShipToAddressID zwróci listę miast, do których
+towary zostały już dostarczone. Lista ma być posortowana i bez powtarzających się wartości.*/
+
 SELECT DISTINCT City
 FROM SalesLT.SalesOrderHeader
 JOIN SalesLT.Address ON SalesLT.SalesOrderHeader.ShipToAddressID = SalesLT.Address.AddressID
@@ -6,18 +9,25 @@ WHERE Status = 5
 ORDER BY City;
 
 --Zad2
+/*Utworzyć zapytanie, które w wyniku zwróci dwie kolumny: nazwę modelu produktu (ProductModel.Name) oraz
+liczbę produktów tego modelu, przy czym w wyniku chcemy widzieć tylko te, dla których ta liczba jest większa
+niż 1. Zastanowić się, jakie konsekwencje rodzi fakt wyboru nazwy jako wartości grupującej.*/
+
 SELECT SalesLT.ProductModel.Name AS Name, COUNT(SalesLT.Product.ProductID) AS NumberOfProducts
 FROM SalesLT.ProductModel
-JOIN SalesLT.Product ON SalesLT.ProductModel.ProductModelID = SalesLT.Product.ProductModelID
+/*LEFT*/ JOIN SalesLT.Product ON SalesLT.ProductModel.ProductModelID = SalesLT.Product.ProductModelID
 GROUP BY SalesLT.ProductModel.ProductModelID, SalesLT.ProductModel.Name
-HAVING COUNT (SalesLT.Product.ProductID) > 1;
+/*-- żeby 0 też działały*/HAVING COUNT (SalesLT.Product.ProductID) > 1;
 -- Wybór nazwy jako wartości grupującej może spowodować, że wyniki będą błędne, ponieważ nie jest ona kluczem głównym tabeli ProductModel, więc mogłby być dwa różne produkty o tej samej nazwie i zostałyby policzone razem
 
 --Zad3
+/*Utworzyć zapytanie, które w wyniku zwróci trzy kolumny: nazwę miasta (z tabeli Address), liczbą klientów z
+tego miasta, liczbą SalesPerson obsługujących klientów z tego miasta.*/
+
 SELECT COUNT( DISTINCT SalesLT.Customer.SalesPerson) AS NumberOfSalesPersons, COUNT(SalesLT.Customer.CustomerID) AS NumberOfCustomers, SalesLT.Address.City AS City
 FROM SalesLT.Customer
-JOIN SalesLT.CustomerAddress ON SalesLT.Customer.CustomerID = SalesLT.CustomerAddress.CustomerID
-JOIN SalesLT.Address ON SalesLT.CustomerAddress.AddressID = SalesLT.Address.AddressID
+RIGHT JOIN SalesLT.CustomerAddress ON SalesLT.Customer.CustomerID = SalesLT.CustomerAddress.CustomerID
+RIGHT JOIN SalesLT.Address ON SalesLT.CustomerAddress.AddressID = SalesLT.Address.AddressID
 GROUP BY SalesLT.Address.City;
 
 --Zad4
@@ -37,6 +47,9 @@ JOIN
 ON SalesLT.Product.ProductCategoryID = NotLeafs.ProductCategoryID;
 
 --Zad5
+/*Utworzyć zapytanie, który w wyniku zwróci trzy kolumny: nazwisko i imię klienta (Customer) oraz kwotę, którą
+ten klient zaoszczędził dzięki udzielonym rabatom (SalesOrderDetail.UnitPriceDiscount).*/
+
 DROP VIEW IF EXISTS Discounts;
 
 GO
@@ -59,6 +72,7 @@ ORDER BY FirstName, LastName;
 jeszcze nie dostarczone, a flaga Delayed określa czy DueDate nie został przekroczony. Przygotować zapytanie,
 które zaktualizuje tę tabelę w oparciu o tabelę SalesOrderHeader i należy skorzystać z konstrukcji MERGE. Aby
 przetestować działanie tej metody, warto dogenerować trochę danych (w bazie testowej jest ich niewiele).*/
+
 DROP TABLE IF EXISTS  OrdersToProcess;
 CREATE TABLE OrdersToProcess (SalesOrderID INT primary key, Delayed BIT);
 
@@ -87,6 +101,9 @@ WHEN NOT MATCHED AND Source.ShipDate > GETDATE() OR Source.ShipDate IS NULL
 SELECT * FROM OrdersToProcess;
 
 --Zad7
+/*Utwórz tabelę Test z kolumną IDENTITY, gdzie identyfikatory mają się zaczynać od 1000 i przesuwać o 10.
+Zademonstruj różnicę pomiędzy @@IDENTITY i IDENT CURRENT.*/
+
 DROP TABLE IF EXISTS Test;
 DROP TABLE IF EXISTS Test2;
 CREATE TABLE Test (Id INT IDENTITY(1000, 10), cosik INT);
@@ -100,6 +117,11 @@ SELECT IDENT_CURRENT('Test');
 -- IDENT_CURRENT('Test') - ostatnie ID nadane w tabeli Test
 
 --Zad8
+/*Zapoznać się z ograniczeniem (constraint) SalesOrderHeader.CK SalesOrderHeader ShipDate, zaprezentować
+instrukcję jego utworzenia. Spróbować dodać wiersz (lub zmodyfikować istniejący) naruszając to ograniczenie.
+Jaki będzie efekt? Następnie wyłączyć ogranicznie i spróbować ponownie. Na koniec włączyć ograniczenie i
+wylistować bieżące naruszenia.*/
+
 /*USE [AdventureWorksLT2019]
 GO
 
