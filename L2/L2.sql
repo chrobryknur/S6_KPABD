@@ -19,13 +19,9 @@ BEGIN
             JOIN Wypozyczenie w1 ON c.Czytelnik_ID = w1.Czytelnik_ID
             JOIN Wypozyczenie w2 ON c.Czytelnik_ID = w2.Czytelnik_ID
         WHERE
-            -- w1 = currently hold, for >= @Dni
-                w1.Data <= @now
+            w1.Data <= @now
             AND DATEADD(day, w1.Liczba_Dni, w1.Data) > @now
             AND DATEDIFF(day, w1.Data, @now) >= @Dni
-            -- w2 = currently hold
-            -- AND w2.Data <= @now
-            -- AND DATEADD(day, w2.Liczba_Dni, w2.Data) > @now
         GROUP BY c.PESEL, c.Czytelnik_ID
     RETURN
 END
@@ -60,14 +56,11 @@ BEGIN
   SET @i=@i+1
 END;
 
--- select * from firstnames
-
 DROP PROCEDURE IF EXISTS generuj_dane
 GO
 CREATE PROCEDURE generuj_dane @n INT
 AS BEGIN
   DECLARE @all_possible TABLE(imie VARCHAR(255), nazwisko VARCHAR(255));
---   INSERT INTO @all_possible SELECT imiona.id, nazwiska.id FROM imiona, nazwiska;
   INSERT INTO @all_possible SELECT imie, nazwisko FROM imiona CROSS JOIN nazwiska;
   IF ((SELECT COUNT(*) FROM @all_possible) / 2 < @n)
     THROW 50000, 'Zażądano zbyt wielu kombinacji', 0;
@@ -93,7 +86,6 @@ GO
 
 CREATE FUNCTION validate_pesel(@PESEL VARCHAR(255)) RETURNS BIT AS
 BEGIN
-    -- DECLARE @result BIT
     IF (
     ( ( CAST(SUBSTRING(@PESEL,1,1) AS BIGINT)*9)
     +(CAST(SUBSTRING(@PESEL,2,1) AS BIGINT)*7)
@@ -107,16 +99,14 @@ BEGIN
     +(CAST(SUBSTRING(@PESEL,10,1) AS BIGINT)*7) ) % 10
     = RIGHT(@PESEL,1) AND LEN(@PESEL) = 11 )
     BEGIN
-        -- set @result = 1
         return 1
     END
     return 0
-    -- return @result
 END
 GO
 
-SELECT [dbo].[validate_pesel] ('00252305876')
-SELECT [dbo].[validate_pesel] ('252305876')
+SELECT [dbo].[validate_pesel] ('97060852597')
+SELECT [dbo].[validate_pesel] ('970608525')
 
 DROP FUNCTION IF EXISTS validate_lastname
 GO
@@ -173,9 +163,9 @@ END
 GO
 
 DECLARE @MyBirthday AS DATETIME 
-SET @MyBirthday = '2000/05/23'
+SET @MyBirthday = '1997/06/08'
 
-SELECT [dbo].[validate_birthday] ('00252305876', @MyBirthday);
+SELECT [dbo].[validate_birthday] ('97060852597', @MyBirthday);
 GO
 
 CREATE OR ALTER PROCEDURE insert_reader @PESEL VARCHAR(255), @lastname VARCHAR(255), @city VARCHAR(255), @birthday DATE
@@ -194,7 +184,7 @@ AS BEGIN
 END
 GO
 
-EXEC insert_reader @PESEL='00252305876', @lastname='Dabrowski', @city='Wroclaw', @birthday='2000/05/23';
+EXEC insert_reader @PESEL='97060852597', @lastname='Dabrowski', @city='Wroclaw', @birthday='1997/06/08';
 
 SELECT * FROM Czytelnik;
 
