@@ -5,29 +5,28 @@ niekrócej niż liczba dni określona w parametrze. W drugiej kolumnie należy d
 egzemplarzy.
 */
 
-DROP FUNCTION IF EXISTS Zad1
+DROP FUNCTION IF EXISTS get_prolonging_readers
 GO
 
-CREATE FUNCTION Zad1(@Dni INT) RETURNS @Wynik TABLE(PESEL CHAR(11), Egzemplarze INT)
+CREATE FUNCTION get_prolonging_readers(@days INT) RETURNS @result TABLE(PESEL CHAR(11), no_of_books INT)
 BEGIN
     DECLARE @now DATETIME
     SET @now = '2020-02-13'
 
-    INSERT INTO @Wynik
+    INSERT INTO @result
         SELECT c.PESEL, COUNT(DISTINCT w2.Wypozyczenie_ID)
-        FROM Czytelnik c
-            JOIN Wypozyczenie w1 ON c.Czytelnik_ID = w1.Czytelnik_ID
-            JOIN Wypozyczenie w2 ON c.Czytelnik_ID = w2.Czytelnik_ID
+        FROM Czytelnik AS c
+            JOIN Wypozyczenie AS w1 ON c.Czytelnik_ID = w1.Czytelnik_ID
+            JOIN Wypozyczenie AS w2 ON c.Czytelnik_ID = w2.Czytelnik_ID
         WHERE
-            w1.Data <= @now
-            AND DATEADD(day, w1.Liczba_Dni, w1.Data) > @now
-            AND DATEDIFF(day, w1.Data, @now) >= @Dni
+            w1.Data <= @now -- DATEDIFF(10.01 - 08.01) = DATEDIFF(08.01 - 10.01) 
+            AND DATEDIFF(day, w1.Data, @now) >= @days
         GROUP BY c.PESEL, c.Czytelnik_ID
     RETURN
 END
 GO
 
-SELECT * FROM Zad1(4)
+SELECT * FROM [dbo].[get_prolonging_readers](4)
 
 --Zad2
 /*
@@ -47,14 +46,27 @@ CREATE TABLE imiona (id INT PRIMARY KEY, imie VARCHAR(255));
 CREATE TABLE nazwiska (id INT PRIMARY KEY, nazwisko VARCHAR(255));
 CREATE TABLE dane (imie VARCHAR(255), nazwisko VARCHAR(255), CONSTRAINT klucz PRIMARY KEY (imie, nazwisko));
 
-DECLARE @i INT
-SET @i = 0
-WHILE (@i < 50)
-BEGIN
-  INSERT INTO imiona VALUES (@i, NEWID())
-  INSERT INTO nazwiska VALUES (@i, NEWID())
-  SET @i=@i+1
-END;
+INSERT INTO imiona VALUES (1, 'Antoni'),
+                        (2, 'Jan'),
+                        (3, 'Jakub'),
+                        (4, 'Aleksander'),
+                        (5, 'Franciszek'),
+                        (6, 'Julia'),
+                        (7, 'Zuzanna'),
+                        (8, 'Zofia'),
+                        (9, 'Hanna'),
+                        (10, 'Maja')
+
+INSERT INTO nazwiska VALUES (1, 'Nowak'),
+                            (2, 'Kowalski'),
+                            (3, 'Wiśniewski'),
+                            (4, 'Wójcik'),
+                            (5, 'Kowalczyk'),
+                            (6, 'Kamiński'),
+                            (7, 'Lewandowski'),
+                            (8, 'Zieliński'),
+                            (9, 'Szymański'),
+                            (10, 'Woźniak')
 
 DROP PROCEDURE IF EXISTS generuj_dane
 GO
@@ -68,7 +80,7 @@ AS BEGIN
   INSERT INTO dane SELECT TOP(@n) * FROM @all_possible ORDER BY NEWID();
 END
 GO
-EXEC generuj_dane @n=300
+EXEC generuj_dane @n=44
 GO
 
 SELECT * FROM dane;
@@ -87,16 +99,16 @@ GO
 CREATE FUNCTION validate_pesel(@PESEL VARCHAR(255)) RETURNS BIT AS
 BEGIN
     IF (
-    ( ( CAST(SUBSTRING(@PESEL,1,1) AS BIGINT)*9)
-    +(CAST(SUBSTRING(@PESEL,2,1) AS BIGINT)*7)
-    +(CAST(SUBSTRING(@PESEL,3,1) AS BIGINT)*3)
-    +(CAST(SUBSTRING(@PESEL,4,1) AS BIGINT)*1)
-    +(CAST(SUBSTRING(@PESEL,5,1) AS BIGINT)*9)
-    +(CAST(SUBSTRING(@PESEL,6,1) AS BIGINT)*7)
-    +(CAST(SUBSTRING(@PESEL,7,1) AS BIGINT)*3)
-    +(CAST(SUBSTRING(@PESEL,8,1) AS BIGINT)*1)
-    +(CAST(SUBSTRING(@PESEL,9,1) AS BIGINT)*9)
-    +(CAST(SUBSTRING(@PESEL,10,1) AS BIGINT)*7) ) % 10
+    ( ( CAST(SUBSTRING(@PESEL,1,1) AS INT)*9)
+    +(CAST(SUBSTRING(@PESEL,2,1) AS INT)*7)
+    +(CAST(SUBSTRING(@PESEL,3,1) AS INT)*3)
+    +(CAST(SUBSTRING(@PESEL,4,1) AS INT)*1)
+    +(CAST(SUBSTRING(@PESEL,5,1) AS INT)*9)
+    +(CAST(SUBSTRING(@PESEL,6,1) AS INT)*7)
+    +(CAST(SUBSTRING(@PESEL,7,1) AS INT)*3)
+    +(CAST(SUBSTRING(@PESEL,8,1) AS INT)*1)
+    +(CAST(SUBSTRING(@PESEL,9,1) AS INT)*9)
+    +(CAST(SUBSTRING(@PESEL,10,1) AS INT)*7) ) % 10
     = RIGHT(@PESEL,1) AND LEN(@PESEL) = 11 )
     BEGIN
         return 1
@@ -104,9 +116,6 @@ BEGIN
     return 0
 END
 GO
-
-SELECT [dbo].[validate_pesel] ('97060852597')
-SELECT [dbo].[validate_pesel] ('970608525')
 
 DROP FUNCTION IF EXISTS validate_lastname
 GO
@@ -117,11 +126,6 @@ BEGIN
     RETURN 0
 END
 GO
-
-SELECT [dbo].[validate_lastname] ('dabrowsk')
-SELECT [dbo].[validate_lastname] ('Dabrowsk')
-SELECT [dbo].[validate_lastname] ('Da')
-SELECT [dbo].[validate_lastname] ('D')
 
 DROP FUNCTION IF EXISTS validate_birthday;
 GO
@@ -162,10 +166,6 @@ BEGIN
 END
 GO
 
-DECLARE @MyBirthday AS DATETIME 
-SET @MyBirthday = '1997/06/08'
-
-SELECT [dbo].[validate_birthday] ('97060852597', @MyBirthday);
 GO
 
 CREATE OR ALTER PROCEDURE insert_reader @PESEL VARCHAR(255), @lastname VARCHAR(255), @city VARCHAR(255), @birthday DATE
@@ -184,9 +184,32 @@ AS BEGIN
 END
 GO
 
+SELECT [dbo].[validate_pesel] ('97060852597')
+SELECT [dbo].[validate_pesel] ('970608525')
+SELECT [dbo].[validate_pesel] ('00252362352');
+
+SELECT [dbo].[validate_lastname] ('dabrowsk')
+SELECT [dbo].[validate_lastname] ('Dabrowsk')
+SELECT [dbo].[validate_lastname] ('Da')
+SELECT [dbo].[validate_lastname] ('D');
+
+DECLARE @MyBirthday AS DATETIME 
+SET @MyBirthday = '1997/06/08'
+
+SELECT [dbo].[validate_birthday] ('97060852597', @MyBirthday)
+
+SET @MyBirthday = '2000/05/23'
+SELECT [dbo].[validate_birthday] ('00252362352', @MyBirthday);
+SELECT [dbo].[validate_birthday] ('00252462352', @MyBirthday);
+SET @MyBirthday = '2000/05/24'
+SELECT [dbo].[validate_birthday] ('00252362352', @MyBirthday);
+
+
 EXEC insert_reader @PESEL='97060852597', @lastname='Dabrowski', @city='Wroclaw', @birthday='1997/06/08';
 
 SELECT * FROM Czytelnik;
+
+DELETE FROM Czytelnik WHERE PESEL = '97060852597';
 
 --Zad4
 /*
@@ -195,20 +218,20 @@ zwraca tabelę o dwóch kolumnach (czytelnik id,suma dni), gdzie dla każdego pr
 jest sumaryczna liczba dni, na którą dany czytelnik wypożyczył książki.
 */
 
-DROP PROCEDURE IF EXISTS get_borrow_days
+DROP PROCEDURE IF EXISTS get_no_borrow_days
 DROP TYPE IF EXISTS input_table
 GO
 
 CREATE TYPE input_table AS TABLE (reader_id INT)
 GO
 
-CREATE PROCEDURE get_borrow_days
+CREATE PROCEDURE get_no_borrow_days
     @input input_table READONLY
 AS BEGIN
     SELECT c.Czytelnik_ID AS reader_id,
-        SUM(w.Liczba_Dni) AS sum_days
-    FROM Czytelnik c
-    JOIN Wypozyczenie w ON c.Czytelnik_ID = w.Czytelnik_ID
+        SUM(w.Liczba_Dni) AS no_days
+    FROM Czytelnik AS c
+    JOIN Wypozyczenie AS w ON c.Czytelnik_ID = w.Czytelnik_ID
     WHERE c.Czytelnik_ID IN (SELECT * FROM @input)
     GROUP BY c.Czytelnik_ID
 END
@@ -216,7 +239,7 @@ GO
 
 DECLARE @i input_table
 INSERT INTO @i VALUES (1), (2), (3)
-EXEC get_borrow_days @input=@i
+EXEC get_no_borrow_days @input=@i
 
 --Zad6
 /*
@@ -231,23 +254,34 @@ DROP PROCEDURE IF EXISTS set_discontinued_date
 DROP TYPE IF EXISTS products_list
 GO
 
-CREATE TYPE products_list AS TABLE (product_id INT)
+CREATE TYPE products_list AS TABLE (ProductID INT)
 GO
 
-CREATE PROCEDURE set_discontinued_date 
-    @products_to_discontinue products_list READONLY, @discontinued_since DATE
+CREATE PROCEDURE set_discontinued_date @products_to_discontinue products_list READONLY, @discontinued_since DATE
 AS BEGIN
-    UPDATE SalesLT.Product
-    SET Product.DiscontinuedDate = @discontinued_since
-    WHERE Product.ProductID IN (SELECT * FROM @products_to_discontinue) AND Product.DiscontinuedDate IS NULL
+    DECLARE @number_of_products_with_discontinued_date_set INT =
+    (
+        SELECT COUNT(Products.ProductID) 
+        FROM @products_to_discontinue AS Products
+           JOIN SalesLT.Product ON SalesLT.Product.ProductID = Products.ProductID
+        WHERE SalesLT.Product.DiscontinuedDate IS NOT NULL
+    )
 
-    SELECT * FROM @products_to_discontinue
+    IF @number_of_products_with_discontinued_date_set > 0 BEGIN;
+        THROW 50000, 'Some products have DiscontinuedDate set, changes will not be applied', 0
+    END
+
+    ELSE BEGIN
+        UPDATE SalesLT.Product
+        SET Product.DiscontinuedDate = @discontinued_since
+        WHERE Product.ProductID IN (SELECT * FROM @products_to_discontinue) AND Product.DiscontinuedDate IS NULL
+    END
 END
 GO
 
 
 DECLARE @products products_list
-INSERT INTO @products VALUES (680), (706)
+INSERT INTO @products VALUES (707)
 DECLARE @now DATE
 SET @now = GETDATE()
 EXEC set_discontinued_date @products_to_discontinue=@products, @discontinued_since=@now
