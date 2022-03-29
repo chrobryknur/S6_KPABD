@@ -19,8 +19,7 @@ BEGIN
             JOIN Wypozyczenie AS w1 ON c.Czytelnik_ID = w1.Czytelnik_ID
             JOIN Wypozyczenie AS w2 ON c.Czytelnik_ID = w2.Czytelnik_ID
         WHERE
-            w1.Data <= @now -- DATEDIFF(10.01 - 08.01) = DATEDIFF(08.01 - 10.01) 
-            AND DATEDIFF(day, w1.Data, @now) >= @days
+            DATEDIFF(day, w1.Data, @now) >= @days
         GROUP BY c.PESEL, c.Czytelnik_ID
     RETURN
 END
