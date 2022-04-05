@@ -180,8 +180,6 @@ BEGIN
 
 		SET @SALARY_SUM = ISNULL(@SALARY_SUM, 0)
         
-        PRINT @SALARY_SUM
-
         SET @SALARY_SUM = @SALARY_SUM + @CURRENT_SALARY
 
         IF (@MONTH_COUNT <> @MONTH - 1)
@@ -223,10 +221,9 @@ VALUES
     (1, 2022, 4, null, null),
 
     (2, 2022, 1, null, 30000),
-    (2, 2022, 3, null, 30000),
-    (2, 2022, 4, null, 30000)
+    (2, 2022, 3, null, null),
+    (2, 2022, 4, null, null)
 
-EXEC [dbo].[calculate_salary] @MONTH=1, @YEAR=2022
 EXEC [dbo].[calculate_salary] @MONTH=2, @YEAR=2022
 SELECT * FROM SalaryHistory;
 EXEC [dbo].[calculate_salary] @MONTH=3, @YEAR=2022
